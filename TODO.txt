@@ -1,0 +1,7 @@
+FINAL REV:
+
+Both [15 pomeriggio]:
+-> [DONE] Ripopolare un db da zero con entrambi i codici completi
+-> versione esportabile del db
+-> zip
+-> rilettura finale e pdf relazione

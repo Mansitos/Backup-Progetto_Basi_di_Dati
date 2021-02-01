@@ -1,0 +1,11 @@
+Per avere una copia del DB funzionante è possibile seguire una delle due seguenti alternative:
+
+1° alternativa:
+	1) Creare manualmente un db di nome 'zoo'
+	2) Eseguire una query con il sorgente SQL fornito (basterà fare copia-incolla di tutto il codice)
+	2) Eseguire il codice R (assicurandosi che i parametri di connessione siano corretti: nome db e password)
+
+2° alternativa:
+	1) Creare manualmente un db di nome 'zoo'
+	2) Eseguire un restore su pgAdmin utilizzando il file zoo.sql (dump del db creato con pgAdmin)
+	

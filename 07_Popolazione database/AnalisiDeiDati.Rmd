@@ -1,0 +1,296 @@
+---
+title: "AnalisiDeiDati"
+author: "Daniele Passabì"
+date: "14/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+
+# Librerie
+library("RPostgreSQL")
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(reshape2)
+
+print("Librerie caricate correttamente")
+
+```
+
+
+```{r}
+
+# CONNESSIONE ALLA BASE DI DATI
+
+# Carico il driver PostgreSQL (e lo memorizzo in una variabile)
+drv = dbDriver("PostgreSQL")
+
+# Ora creo la connessione, memorizzata anch'essa in una variabile (con)
+dbname = "zoo"
+host = "127.0.0.1"
+port = 5432
+user = "postgres"
+password_dany = "dany1998"
+password_mansi = "nvidia"
+
+con = dbConnect(drv,
+                dbname=dbname,
+                host=host,
+                port=port,             # usually 5432
+                user=user,
+                password=password_dany)
+
+# Controllo che la connessione si sia stabilita correttamente
+dbListTables(con)
+
+```
+
+```{r}
+
+# Interrogo il DB e ottengo tutte le tables
+# Effettuo anche un controllo sul numero di entry
+
+area_df = dbGetQuery(con, "select * from area")
+paste("Numero aree:", length(area_df$nome))
+
+abitazione_df = dbGetQuery(con, "select * from abitazione")
+paste("Numero abitazioni:", length(abitazione_df$id))
+
+gabbia_df = dbGetQuery(con, "select * from gabbia")
+paste("Numero gabbie:", length(gabbia_df$id))
+
+genere_df = dbGetQuery(con, "select * from genere")
+paste("Numero generi:", length(genere_df$nome))
+
+esemplare_df = dbGetQuery(con, "select * from esemplare")
+paste("Numero esemplari:", length(esemplare_df$nome))
+
+addetto_pulizie_df = dbGetQuery(con, "select * from addetto_pulizie")
+paste("Numero addetti pulizie:", length(addetto_pulizie_df$cf))
+
+pulire_df = dbGetQuery(con, "select * from pulire")
+paste("Numero istanze pulire:", length(pulire_df$addetto_pulizie))
+
+veterinario_df = dbGetQuery(con, "select * from veterinario")
+paste("Numero veterinari:", length(veterinario_df$cf))
+
+visite_df = dbGetQuery(con, "select * from visita")
+paste("Numero visite:", length(visite_df$data))
+
+# Non è più necessaria la connessione al db, mi disconnetto
+dbDisconnect(con)
+
+```
+
+```{r}
+
+# Iniziamo con una semplice analisi sulle abitazioni
+head(abitazione_df)
+
+```
+
+```{r}
+
+# ABITAZIONE - frequenza genere
+# Generi più presente nelle abitazioni, non considero i generi presenti solo 1 volta
+temp_df = abitazione_df %>%
+  count(genere) %>%
+  filter(n > 1)
+
+ggplot(data=temp_df, aes(y=n, x=reorder(genere, n), fill=-n)) +
+  geom_bar(stat="identity", show.legend = FALSE) + 
+  labs(title="ABITAZIONE - frequenza genere", x="Genere\n", y = "\nFrequenza") +
+  coord_flip()
+
+```
+
+```{r}
+
+# AREA - frequenza abitazioni
+temp_df = abitazione_df %>%
+  count(area)
+
+ggplot(data=temp_df, aes(y=n, x=reorder(area, -n), fill=-n)) +
+  geom_bar(stat="identity", show.legend = FALSE) + 
+  labs(title="AREA - numero di abitazioni per area", x="\nNome Area", y = "Numero Abitazioni\n")
+
+```
+
+
+```{r}
+
+# Per ulteriori analisi, è necessario ottenere un db più completo
+
+head(gabbia_df)     # id
+head(esemplare_df)  # gabbia
+
+# uso merge per ottenere un join dei 2 db
+
+temp_gabbia_df = gabbia_df
+colnames(temp_gabbia_df)[colnames(temp_gabbia_df) == 'id'] <- 'gabbia'  # rinomino 'id' in 'gabbia'
+full_df = merge(temp_gabbia_df, esemplare_df, by=c("gabbia"))
+
+head(full_df)
+
+```
+
+```{r}
+
+# Troviamo i generi di esemplare maggiormente presenti nel DB
+temp_df = full_df %>%
+  count(genere) %>%
+  filter(n > 75)
+
+ggplot(data=temp_df, aes(y=n, x=reorder(genere, n), fill=-n)) +
+  geom_bar(stat="identity", show.legend = FALSE) + 
+  labs(title="ESEMPLARE - generi maggiormente presenti", x="Genere\n", y = "\nQuantità") +
+  coord_flip()
+
+```
+
+```{r}
+
+# Troviamo i generi di esemplare presenti in minor misura nel DB
+temp_df = full_df %>%
+  count(genere) %>%
+  filter(n < 55)
+
+ggplot(data=temp_df, aes(y=n, x=reorder(genere, n), fill=-n)) +
+  geom_bar(stat="identity", show.legend = FALSE) + 
+  labs(title="ESEMPLARE - generi meno frequenti", x="Genere\n", y = "\nQuantità") +
+  coord_flip()
+
+```
+
+```{r}
+
+# Maggior presenza femminile o maschile?
+temp_df = full_df %>%
+  count(sesso)
+
+ggplot(data=temp_df, aes(y=n, x=reorder(sesso, n), fill = c("#f8766d", "#00bfc4"))) +
+  geom_bar(stat="identity", show.legend = FALSE, width=0.5) + 
+  labs(title="ESEMPLARE - sesso", x="\nGenere", y = "Quantità\n") +
+  geom_text(aes(label=n), vjust=1.6, color="white", size=5)
+
+```
+
+```{r}
+
+# Maggior presenza femminile o maschile per ogni genere di animale
+temp_df_1 = full_df %>%
+  filter(sesso=="M") %>%
+  count(sesso, genere) %>%
+  rename(M=n) %>%
+  select(-sesso)
+
+temp_df_2 = full_df %>%
+  filter(sesso=="F") %>%
+  count(sesso, genere) %>%
+  rename(F=n) %>%
+  select(-sesso)
+
+temp_df = merge(temp_df_1, temp_df_2, by=c("genere"))
+temp_df = temp_df %>%
+  filter(M>65)
+
+head(temp_df)
+
+# Uso una rappresentazione diversa, in modo da evidenziare gli esemplari maschili e quelli femminili
+
+# Utilizzo la funzione melt per modificare la forma dei dati (e successivamente plottarli)
+temp_df = melt(temp_df, id.vars='genere')
+
+ggplot(temp_df, aes(x=genere, y=value, fill=variable)) +
+  ggtitle("ESEMPLARE - presenza F/M per i generi di animale più frequenti") +
+  geom_bar(stat='identity', position='dodge') + 
+  scale_fill_manual(values=c("#f8766d", "#00bfc4")) + 
+  theme(legend.title = element_blank()) +                         # rimuovo la legenda
+  xlab("\nGenere") + ylab("Frequenza\n")
+
+```
+
+
+```{r}
+
+head(addetto_pulizie_df)
+
+paste("Stipendio medio di un addetto alle pulizie:", mean(addetto_pulizie_df[["stipendio"]]), "EUR")
+
+```
+
+```{r}
+
+# ADDETTO ALLE PULIZIE - Analizziamo ora tutti gli stipendi, di seguito il codice per ottenere istogramma e densità
+
+ggplot(addetto_pulizie_df, aes(x=stipendio)) + 
+  geom_histogram(aes(y=..density..), colour="black", fill="white")+
+  geom_density(alpha=.2, fill="#56b1f7") +
+  ggtitle("ADDETTI PULIZIE - analisi stipendio") +
+  xlab("\nStipendio") + ylab("Densità\n")
+
+```
+
+
+```{r}
+
+# Esguiamo la medesima analisi sullo stipendio dei veterinari
+
+head(veterinario_df)
+
+paste("Stipendio medio di un veterinario:", mean(veterinario_df[["stipendio"]]), "EUR")
+
+```
+
+```{r}
+
+# VETERINARIO - Analizziamo ora tutti gli stipendi, di seguito il codice per ottenere istogramma e densità
+
+ggplot(veterinario_df, aes(x=stipendio)) + 
+  geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth=45)+
+  geom_density(alpha=.2, fill="#56b1f7") +
+  ggtitle("VETERINARIO - analisi stipendio") +
+  xlab("\nStipendio") + ylab("Densità\n")
+
+```
+
+```{r}
+
+head(visita_df)
+
+# Plot della densità di visite ogni anno
+
+ggplot(visita_df, aes(x=data)) + 
+  geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth=60)+
+  geom_density(alpha=.2, fill="#56b1f7") +
+  ggtitle("VISITA - date") +
+  xlab("\nAnno") + ylab("Densità\n")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

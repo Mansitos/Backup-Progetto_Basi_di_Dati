@@ -1,0 +1,29 @@
+-- TRIGGERS --
+1) All'aggiunta (INSERT/UPDATE) di un esemplare ad una gabbia bisogna controllare che l'abitazione in cui essa sia contenuta abbia il genere corretto.
+2) Alla modifica (spostamento) (UPDATE) di una gabbia in una abitazione, bisogna controllare che il genere dell'animale in essa contenuto combaci con quello assegnato alla nuova abitazione di dest.
+    nb: non serve eseguire il check sull'inserimento perchè bisogna prima aggiungere una gabbia e poi assegnarli un animale, di conseguenza non è possibile assegnare una gabbia errata alla sua aggiunta in 
+        quanto sono sempre vuote durante la creazione.
+3) All'aggiunta (INSERT/UPDATE) di un esemplare bisogna controllare che data arrivo >= data nascita.
+4) All'aggiunta (INSERT/UPDATE) di una visita bisogna controllare che data visita > data arrivo esemplare.
+5) Alla modifica di un genere assegnato (UPDATE) ad un'abitazione, bisogna controllare che non vengano violati i vincoli di genere
+    nb: non serve il check sull'insert perchè non puoi inserire una abitaziono già con delle gabbie (non c'è rischio che queste violino il vincolo di genere perchè vengono aggiunte e controllate successivamente)
+6) Alla modifica della data di arrivo di un esemplare bisogna controllare che questa sia coerente con le date delle visite: una visita non può essere stato effattuata prima che un esemplare sia arrivato nello zoo.
+
+
+-- DERIVATED ATTRIBUTES --
+1) All'aggiunta/spostamento/rimozione di una gabbia bisogna aggiornare l'attributo derivato n_gabbie sulle abitazioni interessate.
+2) All'aggiunta/spostamento/rimozione di una abitazione bisogna aggiornare l'attributo derivato n_abitazioni sulle aree interessate.
+3) Alla creazione di abitazioni/gabbie l'attributo derivato dovrebbe essere inizializzato a 0
+4) Bisogna negare la modifca manuale all'utente degli attributi Abitazione.numero_gabbie e Area.numero_abitazioni
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TODO ON TRIGGERS:
+todo: modifica del nome area spacca tutto...
+todo: modifica del nome genere spacca tutto...
+
+
+
+
+
+
