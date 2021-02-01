@@ -1,3 +1,6 @@
+### Questa repo è un BACKUP del progetto di basi di dati (corso univeristario UNIUD triennale)
+
+
 ## **PROGETTO DI BASI DI DATI - 2019**
 
 ---
